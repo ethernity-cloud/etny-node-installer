@@ -28,12 +28,12 @@ CentOS 7*
 RHEL 8*
 ```
 
-## Instructions
+## Usage Instructions
 
 ### 1. Clone the repository to the home folder, make it executable and run it
 ```
 $ cd && git clone https://github.com/ethernity-cloud/etny-node-installer 
-$ cd && chmod +x ~/etny-node-installer/etny-node-installer.sh && ./etny-node-installer/etny-node-installer.sh
+$ ~/etny-node-installer/etny-node-installer.sh
 ```
 
 ### 2. Run the script again after system restart
