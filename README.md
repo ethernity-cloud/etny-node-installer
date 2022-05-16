@@ -17,7 +17,6 @@ Currently the following operating systems are suported:
 ```
 Ubuntu 18.04
 Ubuntu 20.04
-
 ```
 
 We are planning support for the following operating systems:
@@ -27,7 +26,6 @@ Debian 10*
 Fedora 30*
 CentOS 7*
 RHEL 8*
-
 ```
 
 ## Instructions
