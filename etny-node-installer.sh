@@ -216,7 +216,7 @@ case $(awk '/^VERSION_ID=/' /etc/*-release 2>/dev/null | awk -F'=' '{ print tolo
 	18.04) 
 		os='Ubuntu 18.04'
 		ubuntu_20_04;;
-	22.04) echo "22.04";;
+	22.04) echo "Ubuntu 22.04 is not yet supported. Exiting...";;
 	*) echo "Version not supported. Exiting..."
 esac
 }
