@@ -2,7 +2,7 @@
 requiredkernelversion="5.13.0-40"
 nodefolder="mvp-pox-node"
 configfile="config"
-service="etny-vagr1ant.service"
+service="etny-vagrant.service"
 os=""
 
 ubuntu_20_04(){
