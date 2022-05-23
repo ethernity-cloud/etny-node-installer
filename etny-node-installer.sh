@@ -182,16 +182,17 @@ sgx_functionality(){
 #activating sgx
 echo "Activating SGX..."
 cd && cd $nodefolder
-sudo apt-get install make-guile gcc -y
 sudo make all -C sgx/
 sudo sgx/sgx_enable
 if [ $? -eq 0 ]
 	then
-	echo "SGX activated... "
-	ubuntu_20_04_ansible_playbook
-	else sgx_status=$(sudo sgx/sgx_enable --status)
+		echo "SGX activated... "
+		ubuntu_20_04_ansible_playbook
+	else 
+		sgx_status=$(sudo sgx/sgx_enable --status)
 		echo sgx_status && exit
-fi }
+fi 
+}
 
 ubuntu_20_04_ansible_playbook(){
 #running the ansible-playbook command and restart system automatically
@@ -213,7 +214,7 @@ ubuntu_20_04_update_ansible(){
 #If we don't have the right kernel running that means we didn't update the system
 echo "We don't have the right kernel running."
 echo "Updating system, kernel and installing ansible..."
-sudo sudo apt-add-repository --yes --update ppa:ansible/ansible && sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y &&  sudo apt -y install software-properties-common ansible
+sudo sudo apt-add-repository --yes --update ppa:ansible/ansible && sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y &&  sudo apt -y install software-properties-common ansible make-guile gcc
 if [ $? -eq 0 ]
 then 
 	echo "Update successfull. Continuing..."
