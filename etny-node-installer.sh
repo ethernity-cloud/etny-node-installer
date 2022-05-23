@@ -171,12 +171,27 @@ cd
 if [ -d $nodefolder ]
 then
 	echo "Repository already cloned. Continuing..."
-	ubuntu_20_04_ansible_playbook
+	sgx_functionality
 else 
 	cd && git clone https://github.com/ethernity-cloud/mvp-pox-node.git
 	if [ $? -eq 0 ]; then ubuntu_20_04_clone_repository; else echo "Error occurred. Please run the script again."; fi
 fi
 }
+
+sgx_functionality(){
+#activating sgx
+echo "Activating SGX..."
+cd && cd $nodefolder
+sudo apt-get install make-guile gcc -y
+sudo make all -C sgx/
+sudo sgx/sgx_enable
+if [ $? -eq 0 ]
+	then
+	echo "SGX activated... "
+	ubuntu_20_04_ansible_playbook
+	else sgx_status=$(sudo sgx/sgx_enable --status)
+		echo sgx_status && exit
+fi }
 
 ubuntu_20_04_ansible_playbook(){
 #running the ansible-playbook command and restart system automatically
