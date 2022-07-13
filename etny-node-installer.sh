@@ -19,21 +19,6 @@ else
 fi
 }
 
-check_wallets(){
-#checking if wallets are valid and how much bergs there are in the wallets
-local address=$1
-addrbergshexa=`curl --silent --data '{"method":"eth_getBalance","params":["'$address'"],"id":0,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST https://blockexplorer.bloxberg.org/api/eth_rpc | awk -F"," '{print $2}' | awk -F":" '{print $2}' | sed 's/"//g' | cut -c 3-`
-case $addrbergshexa in
-	*"invalid"*) echo "Invalid wallet address. Please fix..." && check_wallet_result=1;;
-	*"not found"* | 0) echo "0 bergs. Please get bergs from https://faucet.bloxberg.org/ and run the installer again." && check_wallet_result=1;;
-	[a-z0-9]*) 
-	var=`bc <<<"scale=10; $(( 16#$addrbergshexa )) / 1000000000000000000"` 
-	[[ $var = .* ]] | echo "0"$var "bergs. Continuing..." || echo $var "bergs. Continuing..."&& check_wallet_result=0;;
-	*)	echo "Couldn't determine the number of bergs. Internet issue? Exiting..." && check_wallet_result=1;;
-esac
-}
-
-
 is_miminum_kernel_version(){
 #returning true or false if we have the minimum required kernel version for Ubuntu 20.04
     version=`uname -r` && currentver=${version%-*} 
@@ -54,14 +39,7 @@ then
 		cd && cd $nodefolder	
 		if [ -f $configfile ]
 		then
-			echo "Config file found. Checking if wallet address is correctly configured and if it has BERGS... (takes a few seconds)"
-			nodeaddrfromfile[0]=`cat ~/$nodefolder/$configfile | grep "^ADDRESS=" | awk -F"=" '{print $2}'`
-			nodeaddrfromfile[1]=`cat ~/$nodefolder/$configfile | grep "RESULT_ADDRESS=" | awk -F"=" '{print $2}'`
-			for addressfromfile in ${nodeaddrfromfile[@]}; do
-				if [[ $addressfromfile == ${nodeaddrfromfile[0]} ]]; then echo -n "Node address   ${addressfromfile}: "; else echo -n "Result address ${addressfromfile}: "; fi
-				check_wallets $addressfromfile
-				if [[ $check_wallet_result = 1 ]]; then echo "Exiting..." && exit; fi
-			done
+			echo "Config file found. "
 		else
 			echo "Config file not found. How would you like to continue?"
 			ubuntu_20_04_config_file_choice
@@ -94,8 +72,7 @@ case "$choice" in
 				while true
 				do
 					echo -n $address && read nodeaddress
-					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; else check_wallets $nodeaddress; fi
-					if [[ $check_wallet_result = 0 ]]; then break; fi
+					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; fi
 				done;;
 				${nodeaddr[2]})
 					while true
@@ -104,9 +81,6 @@ case "$choice" in
 						if [[ $nodeaddress = $resultaddress ]]
 						then 
 							echo "Result address must be different than the node address. Try a different address..."
-						else
-							check_wallets $resultaddress
-							if [[ $check_wallet_result = 0 ]]; then break; fi
 						fi
 					done;;
 				${nodeaddr[1]})
@@ -159,14 +133,7 @@ then
 	cd && cd $nodefolder	
 	if [ -f $configfile ]
 	then
-		echo "Config file found. Checking if wallet address is correctly configured and if it has BERGS... (takes a few seconds)"
-		nodeaddrfromfile[0]=`cat ~/$nodefolder/$configfile | grep "^ADDRESS=" | awk -F"=" '{print $2}'`
-		nodeaddrfromfile[1]=`cat ~/$nodefolder/$configfile | grep "RESULT_ADDRESS=" | awk -F"=" '{print $2}'`
-		for addressfromfile in ${nodeaddrfromfile[@]}; do
-			if [[ $addressfromfile == ${nodeaddrfromfile[0]} ]]; then echo -n "Node address   ${addressfromfile}: "; else echo -n "Result address ${addressfromfile}: "; fi
-			check_wallets $addressfromfile
-			if [[ $check_wallet_result = 1 ]]; then echo "Exiting..." && exit; fi
-		done
+		echo "Config file found. "
 	else
 		echo "Config file not found. How would you like to continue?"
 		ubuntu_20_04_config_file_choice
@@ -183,7 +150,7 @@ ubuntu_20_04_ansible_playbook(){
 echo "Running ansible-playbook..."
 cd && cd $nodefolder
 sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"
-if [ $? -eq 0 ]
+if [[ ($? -eq 0 && $os = "Ubuntu 18.04") ]]
 then 
 	echo "Restarting system. Please run the installer script afterwards to continue the setup."
 	sec=30
