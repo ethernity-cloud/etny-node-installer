@@ -67,7 +67,7 @@ then
 			ubuntu_20_04_config_file_choice
 		fi
 		echo "Running ansible-playbook script..."	
-		sudo ansible-galaxy install uoi-io.libvirt && sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"	
+		sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"	
 		if [ $? -eq 0 ]; then echo "Node installation completed successfully. Please allow up to 24h to see transactions on the blockchain. " && exit; fi
 	else
 		ubuntu_20_04_clone_repository
