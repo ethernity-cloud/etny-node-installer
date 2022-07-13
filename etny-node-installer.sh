@@ -80,7 +80,8 @@ fi
 ubuntu_20_04_config_file_choice(){
 #if the config file doesn't exist we offer the either generate one with random wallets or we get the wallets from input
 echo "1) Type wallets. "
-echo "2) Exit. Rerun the script when config file exists..."
+echo "2) Generate random wallets in ansible-playbook. "
+echo "3) Exit. Rerun the script when config file exists..."
 echo -n "[Type your choice to continue]:" && read choice
 case "$choice" in 
 	1) 
@@ -142,7 +143,8 @@ case "$choice" in
 		echo "RESULT_PRIVATE_KEY="$resultprivatekey >> ~/$nodefolder/$configfile
 		if [ -f ~/$nodefolder/$configfile ]; then echo "Config file generated successfully. Continuing..." && ubuntu_20_04_kernel_check; else echo "Something went wrong. Seek Help!" && exit; fi
 	;;
-	2) echo "Exiting..." && exit;;
+	2) ubuntu_20_04_ansible_playbook;;
+	3) echo "Exiting..." && exit;;
 	*) echo "Invalid choice. Please choose an option below..." && ubuntu_20_04_config_file_choice;;
 esac
 }
