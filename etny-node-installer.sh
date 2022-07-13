@@ -43,7 +43,7 @@ is_miminum_kernel_version(){
 ubuntu_20_04_kernel_check(){
 #if we have the right kernel then we run the ansible-playbook and finish installation
 echo "Determining if the right kernel is running..."
-if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(uname -r) = "5.0.0-050000-generic"  && $os = "Ubuntu 18.04") ]]
+if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(uname -r) = "5.0.0-050000-generic"  && $os = "Ubuntu 18.04") || ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 22.04" )]]
 then  
 	echo "The right kernel is running. Continuing setup..."
 	echo "Verifying if the repository has been cloned..."
@@ -171,6 +171,21 @@ cd
 if [ -d $nodefolder ]
 then
 	echo "Repository already cloned. Continuing..."
+	cd && cd $nodefolder	
+	if [ -f $configfile ]
+	then
+		echo "Config file found. Checking if wallet address is correctly configured and if it has BERGS... (takes a few seconds)"
+		nodeaddrfromfile[0]=`cat ~/$nodefolder/$configfile | grep "^ADDRESS=" | awk -F"=" '{print $2}'`
+		nodeaddrfromfile[1]=`cat ~/$nodefolder/$configfile | grep "RESULT_ADDRESS=" | awk -F"=" '{print $2}'`
+		for addressfromfile in ${nodeaddrfromfile[@]}; do
+			if [[ $addressfromfile == ${nodeaddrfromfile[0]} ]]; then echo -n "Node address   ${addressfromfile}: "; else echo -n "Result address ${addressfromfile}: "; fi
+			check_wallets $addressfromfile
+			if [[ $check_wallet_result = 1 ]]; then echo "Exiting..." && exit; fi
+		done
+	else
+		echo "Config file not found. How would you like to continue?"
+		ubuntu_20_04_config_file_choice
+	fi
 	ubuntu_20_04_ansible_playbook
 else 
 	cd && git clone https://github.com/ethernity-cloud/mvp-pox-node.git
@@ -182,7 +197,6 @@ ubuntu_20_04_ansible_playbook(){
 #running the ansible-playbook command and restart system automatically
 echo "Running ansible-playbook..."
 cd && cd $nodefolder
-sudo ansible-galaxy install uoi-io.libvirt
 sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"
 if [ $? -eq 0 ]
 then 
@@ -216,7 +230,9 @@ case $(awk '/^VERSION_ID=/' /etc/*-release 2>/dev/null | awk -F'=' '{ print tolo
 	18.04) 
 		os='Ubuntu 18.04'
 		ubuntu_20_04;;
-	22.04) echo "Ubuntu 22.04 is not yet supported. Exiting...";;
+	22.04) 
+		os='Ubuntu 22.04'
+		ubuntu_20_04;;
 	*) echo "Version not supported. Exiting..."
 esac
 }
