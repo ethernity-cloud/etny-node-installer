@@ -72,7 +72,7 @@ case "$choice" in
 				while true
 				do
 					echo -n $address && read nodeaddress
-					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; fi
+					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; else break; fi
 				done;;
 				${nodeaddr[2]})
 					while true
@@ -81,13 +81,14 @@ case "$choice" in
 						if [[ $nodeaddress = $resultaddress ]]
 						then 
 							echo "Result address must be different than the node address. Try a different address..."
+						else break
 						fi
 					done;;
 				${nodeaddr[1]})
 					while true
 					do
 						echo -n $address && read nodeprivatekey
-						if [[ ${#nodeprivatekey} = 64 && $nodeprivatekey =~ ^[a-zA-Z0-9]*$ ]]
+						if [[ ${#nodeprivatekey} > 63 && $nodeprivatekey =~ ^[a-zA-Z0-9]*$ ]]
 						then
 							break
 						else echo "Invalid result private key. Please try again..."
@@ -97,7 +98,7 @@ case "$choice" in
 					while true
 					do
 						echo -n $address && read resultprivatekey
-						if [[ ${#resultprivatekey} = 64 && $resultprivatekey =~ ^[a-zA-Z0-9]*$ ]]
+						if [[ ${#resultprivatekey} > 63 && $resultprivatekey =~ ^[a-zA-Z0-9]*$ ]]
 						then
 							if [[ $nodeprivatekey = $resultprivatekey ]]
 							then
