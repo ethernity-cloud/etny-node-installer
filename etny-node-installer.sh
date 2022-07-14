@@ -31,6 +31,10 @@ echo "Determining if the right kernel is running..."
 if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(uname -r) = "5.0.0-050000-generic"  && $os = "Ubuntu 18.04") || ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 22.04" )]]
 then  
 	echo "The right kernel is running. Continuing setup..."
+	## check ansible 
+	echo "Check ansible version..."
+	ANSIBLE_VERSION=`ansible --version`
+	if [[ $ANSIBLE_VERSION = "" ]]; then echo "Installing latest ansible version..." && sudo apt-add-repository --yes --update ppa:ansible/ansible && sudo apt update && sudo apt -y install software-properties-common ansible; fi
 	echo "Verifying if the repository has been cloned..."
 	cd 
 	if [ -d $nodefolder ]
