@@ -32,8 +32,8 @@ if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(u
 then  
 	echo "The right kernel is running. Continuing setup..."
 	## check ansible 
-	echo "Check ansible version..."
-	ANSIBLE_VERSION=`ansible --version`
+	echo "Check ansible version..." 
+	ANSIBLE_VERSION=`ansible --version 2> /dev/null`
 	if [[ $ANSIBLE_VERSION = "" ]]; then echo "Installing latest ansible version..." && sudo apt-add-repository --yes --update ppa:ansible/ansible && sudo apt update && sudo apt -y install software-properties-common ansible; fi
 	echo "Verifying if the repository has been cloned..."
 	cd 
@@ -92,7 +92,7 @@ case "$choice" in
 					while true
 					do
 						echo -n $address && read nodeprivatekey
-						if [[ ${#nodeprivatekey} > 63 && $nodeprivatekey =~ ^[a-zA-Z0-9]*$ ]]
+						if [[ ${#nodeprivatekey} = 64 && $nodeprivatekey =~ ^[a-zA-Z0-9]*$ ]]
 						then
 							break
 						else echo "Invalid result private key. Please try again..."
@@ -102,7 +102,7 @@ case "$choice" in
 					while true
 					do
 						echo -n $address && read resultprivatekey
-						if [[ ${#resultprivatekey} > 63 && $resultprivatekey =~ ^[a-zA-Z0-9]*$ ]]
+						if [[ ${#resultprivatekey} = 64 && $resultprivatekey =~ ^[a-zA-Z0-9]*$ ]]
 						then
 							if [[ $nodeprivatekey = $resultprivatekey ]]
 							then
