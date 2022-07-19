@@ -19,21 +19,6 @@ else
 fi
 }
 
-check_wallets(){
-#checking if wallets are valid and how much bergs there are in the wallets
-local address=$1
-addrbergshexa=`curl --silent --data '{"method":"eth_getBalance","params":["'$address'"],"id":0,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST https://blockexplorer.bloxberg.org/api/eth_rpc | awk -F"," '{print $2}' | awk -F":" '{print $2}' | sed 's/"//g' | cut -c 3-`
-case $addrbergshexa in
-	*"invalid"*) echo "Invalid wallet address. Please fix..." && check_wallet_result=1;;
-	*"not found"* | 0) echo "0 bergs. Please get bergs from https://faucet.bloxberg.org/ and run the installer again." && check_wallet_result=1;;
-	[a-z0-9]*) 
-	var=`bc <<<"scale=10; $(( 16#$addrbergshexa )) / 1000000000000000000"` 
-	[[ $var = .* ]] | echo "0"$var "bergs. Continuing..." || echo $var "bergs. Continuing..."&& check_wallet_result=0;;
-	*)	echo "Couldn't determine the number of bergs. Internet issue? Exiting..." && check_wallet_result=1;;
-esac
-}
-
-
 is_miminum_kernel_version(){
 #returning true or false if we have the minimum required kernel version for Ubuntu 20.04
     version=`uname -r` && currentver=${version%-*} 
@@ -43,9 +28,13 @@ is_miminum_kernel_version(){
 ubuntu_20_04_kernel_check(){
 #if we have the right kernel then we run the ansible-playbook and finish installation
 echo "Determining if the right kernel is running..."
-if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(uname -r) = "5.0.0-050000-generic"  && $os = "Ubuntu 18.04") ]]
+if [[ ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 20.04" ) || ( $(uname -r) = "5.0.0-050000-generic"  && $os = "Ubuntu 18.04") || ( "$(is_miminum_kernel_version)" = true && $os = "Ubuntu 22.04" )]]
 then  
 	echo "The right kernel is running. Continuing setup..."
+	## check ansible 
+	echo "Check ansible version..." 
+	ANSIBLE_VERSION=`ansible --version 2> /dev/null`
+	if [[ $ANSIBLE_VERSION = "" ]]; then echo "Installing latest ansible version..." && sudo apt-add-repository --yes --update ppa:ansible/ansible && sudo apt update && sudo apt -y install software-properties-common ansible; fi
 	echo "Verifying if the repository has been cloned..."
 	cd 
 	if [ -d $nodefolder ]
@@ -54,20 +43,13 @@ then
 		cd && cd $nodefolder	
 		if [ -f $configfile ]
 		then
-			echo "Config file found. Checking if wallet address is correctly configured and if it has BERGS... (takes a few seconds)"
-			nodeaddrfromfile[0]=`cat ~/$nodefolder/$configfile | grep "^ADDRESS=" | awk -F"=" '{print $2}'`
-			nodeaddrfromfile[1]=`cat ~/$nodefolder/$configfile | grep "RESULT_ADDRESS=" | awk -F"=" '{print $2}'`
-			for addressfromfile in ${nodeaddrfromfile[@]}; do
-				if [[ $addressfromfile == ${nodeaddrfromfile[0]} ]]; then echo -n "Node address   ${addressfromfile}: "; else echo -n "Result address ${addressfromfile}: "; fi
-				check_wallets $addressfromfile
-				if [[ $check_wallet_result = 1 ]]; then echo "Exiting..." && exit; fi
-			done
+			echo "Config file found. "
 		else
 			echo "Config file not found. How would you like to continue?"
 			ubuntu_20_04_config_file_choice
 		fi
 		echo "Running ansible-playbook script..."	
-		sudo ansible-galaxy install uoi-io.libvirt && sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"	
+		sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"	
 		if [ $? -eq 0 ]; then echo "Node installation completed successfully. Please allow up to 24h to see transactions on the blockchain. " && exit; fi
 	else
 		ubuntu_20_04_clone_repository
@@ -79,28 +61,12 @@ fi
 
 ubuntu_20_04_config_file_choice(){
 #if the config file doesn't exist we offer the either generate one with random wallets or we get the wallets from input
-echo "1) Generate config file with random wallets." 
-echo "2) Type wallets. "
+echo "1) Type wallets. "
+echo "2) Generate random wallets in ansible-playbook. "
 echo "3) Exit. Rerun the script when config file exists..."
 echo -n "[Type your choice to continue]:" && read choice
 case "$choice" in 
 	1) 
-		echo "Generating config file..."
-		cd && $nodefolder/utils/linux/ethkey generate random | awk '!/public:/' | awk '{gsub("secret:","PRIVATE_KEY="); print}' | awk '{gsub("address:","ADDRESS="); print}' | awk '{ gsub(/ /,""); print }' | sed -n 'h;n;p;g;p' >> ~/$nodefolder/$configfile
-		cd && $nodefolder/utils/linux/ethkey generate random | awk '!/public:/' | awk '{gsub("secret:","RESULT_PRIVATE_KEY="); print}' | awk '{gsub("address:","RESULT_ADDRESS="); print}' | awk '{ gsub(/ /,""); print }' | sed -n 'h;n;p;g;p' >> ~/$nodefolder/$configfile
-		if [ -f $nodefolder/$configfile ]
-		then 
-			echo "Config file generated successfully. Continuing..." 
-			echo -e '\033[1mMAKE SURE YOU REQUEST BERGS FROM https://faucet.bloxberg.org/ FOR THE WALLETS BELOW BEFORE CONTINUING\033[0m'
-			cat ~/$nodefolder/$configfile | grep "^ADDRESS=" | awk -F"=" '{print $2}'
-			cat ~/$nodefolder/$configfile | grep "RESULT_ADDRESS=" | awk -F"=" '{print $2}'
-			echo -e '\033[1mWallet addresses can also be seen in the config file.\033[0m'
-			read -rsn1 -p"Press any key to continue...";echo
-			ubuntu_20_04_kernel_check
-		else echo "Something went wrong. Seek Help!" && exit
-		fi
-	;;
-	2) 
 		echo "Type/Paste wallet details below..."
 		nodeaddr=("Node Address: " "Node Private Key: " "Result Address: " "Result Private Key: ")
 		IFS=""
@@ -110,8 +76,7 @@ case "$choice" in
 				while true
 				do
 					echo -n $address && read nodeaddress
-					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; else check_wallets $nodeaddress; fi
-					if [[ $check_wallet_result = 0 ]]; then break; fi
+					if [[ $nodeaddress = "" ]]; then echo "Node address cannot be empty."; else break; fi
 				done;;
 				${nodeaddr[2]})
 					while true
@@ -120,9 +85,7 @@ case "$choice" in
 						if [[ $nodeaddress = $resultaddress ]]
 						then 
 							echo "Result address must be different than the node address. Try a different address..."
-						else
-							check_wallets $resultaddress
-							if [[ $check_wallet_result = 0 ]]; then break; fi
+						else break
 						fi
 					done;;
 				${nodeaddr[1]})
@@ -159,6 +122,7 @@ case "$choice" in
 		echo "RESULT_PRIVATE_KEY="$resultprivatekey >> ~/$nodefolder/$configfile
 		if [ -f ~/$nodefolder/$configfile ]; then echo "Config file generated successfully. Continuing..." && ubuntu_20_04_kernel_check; else echo "Something went wrong. Seek Help!" && exit; fi
 	;;
+	2) ubuntu_20_04_ansible_playbook;;
 	3) echo "Exiting..." && exit;;
 	*) echo "Invalid choice. Please choose an option below..." && ubuntu_20_04_config_file_choice;;
 esac
@@ -171,6 +135,14 @@ cd
 if [ -d $nodefolder ]
 then
 	echo "Repository already cloned. Continuing..."
+	cd && cd $nodefolder	
+	if [ -f $configfile ]
+	then
+		echo "Config file found. "
+	else
+		echo "Config file not found. How would you like to continue?"
+		ubuntu_20_04_config_file_choice
+	fi
 	ubuntu_20_04_ansible_playbook
 else 
 	cd && git clone https://github.com/ethernity-cloud/mvp-pox-node.git
@@ -182,9 +154,8 @@ ubuntu_20_04_ansible_playbook(){
 #running the ansible-playbook command and restart system automatically
 echo "Running ansible-playbook..."
 cd && cd $nodefolder
-sudo ansible-galaxy install uoi-io.libvirt
 sudo ansible-playbook -i localhost, playbook.yml -e "ansible_python_interpreter=/usr/bin/python3"
-if [ $? -eq 0 ]
+if [[ ($? -eq 0 && $os = "Ubuntu 18.04") ]]
 then 
 	echo "Restarting system. Please run the installer script afterwards to continue the setup."
 	sec=30
@@ -216,7 +187,9 @@ case $(awk '/^VERSION_ID=/' /etc/*-release 2>/dev/null | awk -F'=' '{ print tolo
 	18.04) 
 		os='Ubuntu 18.04'
 		ubuntu_20_04;;
-	22.04) echo "Ubuntu 22.04 is not yet supported. Exiting...";;
+	22.04) 
+		os='Ubuntu 22.04'
+		ubuntu_20_04;;
 	*) echo "Version not supported. Exiting..."
 esac
 }
