@@ -1,4 +1,4 @@
-#DEPRECATED - ETNY Node Installer has been merged with MVP-POX-NODE
+# DEPRECATED - ETNY Node Installer has been merged with MVP-POX-NODE
 
 # ETNY Node Installer
 
