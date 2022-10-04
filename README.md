@@ -1,3 +1,5 @@
+#DEPRECATED - ETNY Node Installer has been merged with MVP-POX-NODE
+
 # ETNY Node Installer
 
 This installer provides an easy way to automate the installation process of an Ethernity Node as much as possible.
